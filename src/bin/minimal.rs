@@ -9,6 +9,30 @@ use rtic_blinky as _; // global logger + panicking-behavior + memory layout
     dispatchers = [SWI0_EGU0]
 )]
 mod app {
+    use nrf52840_hal::{
+        prelude::*,
+        gpio::{
+            Level,
+            p0::*,
+            Output,
+            PushPull
+        },
+        timer::Instance,
+        pac::{
+            NVIC,
+            TIMER1,
+        },
+    };
+
+    use rtic_blinky::timer::{
+        Enabled,
+        Periodic,
+        Started,
+        Timer,
+        TwentyFour,
+        U0,
+    };
+
     // Shared resources go here
     #[shared]
     struct Shared {
@@ -18,27 +42,35 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        // TODO: Add resources
+        led: P0_13<Output<PushPull>>,
+        timer: Timer<TIMER1, Started, TwentyFour, Enabled, Periodic<U0>>,
     }
 
     #[init]
     fn init(cx: init::Context) -> (Shared, Local) {
         defmt::info!("init");
 
-        // TODO setup monotonic if used
-        // let sysclk = { /* clock setup + returning sysclk as an u32 */ };
-        // let token = rtic_monotonics::create_systick_token!();
-        // rtic_monotonics::systick::Systick::new(cx.core.SYST, sysclk, token);
+        let p = cx.device;
 
+        let p0 = Parts::new(p.P0);
+        let led = p0.p0_13.into_push_pull_output(Level::High);
 
-        task1::spawn().ok();
+        // Timer
+        let mut timer = Timer::periodic(p.TIMER1)
+            .set_prescale::<U0>()
+            .set_counterwidth::<TwentyFour>();
 
+        // Interrupts
+        timer.compare_against(0);
+        let timer = timer.enable_interrupt();
+        unsafe { NVIC::unmask(TIMER1::INTERRUPT) }
+
+        let timer = timer.start();
         (
-            Shared {
-                // Initialization of shared resources go here
-            },
+            Shared { },
             Local {
-                // Initialization of local resources go here
+                led,
+                timer,
             },
         )
     }
@@ -53,9 +85,19 @@ mod app {
         }
     }
 
-    // TODO: Add tasks
-    #[task(priority = 1)]
-    async fn task1(_cx: task1::Context) {
-        defmt::info!("Hello from task1!");
+    #[task(binds = TIMER1, local = [led, timer])]
+    fn toggle_led(ctx: toggle_led::Context) {
+        defmt::info!("toggle_led");
+
+        let timer = ctx.local.timer;
+        timer.unpend_interrupt();
+
+        let led = ctx.local.led;
+
+        if led.is_set_high().unwrap() {
+            led.set_low().unwrap();
+        } else {
+            led.set_high().unwrap();
+        }
     }
 }
