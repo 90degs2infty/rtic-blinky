@@ -10,28 +10,13 @@ use rtic_blinky as _; // global logger + panicking-behavior + memory layout
 )]
 mod app {
     use nrf52840_hal::{
+        gpio::{p0::*, Level, Output, PushPull},
+        pac::{NVIC, TIMER1},
         prelude::*,
-        gpio::{
-            Level,
-            p0::*,
-            Output,
-            PushPull
-        },
         timer::Instance,
-        pac::{
-            NVIC,
-            TIMER1,
-        },
     };
 
-    use rtic_blinky::timer::{
-        Enabled,
-        Periodic,
-        Started,
-        Timer,
-        TwentyFour,
-        U0,
-    };
+    use rtic_blinky::timer::{Enabled, Periodic, Started, Timer, TwentyFour, U0};
 
     // Shared resources go here
     #[shared]
@@ -66,13 +51,7 @@ mod app {
         unsafe { NVIC::unmask(TIMER1::INTERRUPT) }
 
         let timer = timer.start();
-        (
-            Shared { },
-            Local {
-                led,
-                timer,
-            },
-        )
+        (Shared {}, Local { led, timer })
     }
 
     // Optional idle, can be removed if not needed.

@@ -147,7 +147,7 @@ impl Width for ThirtyTwo {
 
 // Config
 pub struct OneShot;
-pub struct Periodic<P: Prescaler>{
+pub struct Periodic<P: Prescaler> {
     prescaler: PhantomData<P>,
 }
 
@@ -159,8 +159,7 @@ pub struct Stopped;
 pub struct Enabled;
 pub struct Disabled;
 
-pub struct Timer<T: Instance, S, W: Width, I, C>
-{
+pub struct Timer<T: Instance, S, W: Width, I, C> {
     timer: T,
     w: PhantomData<W>,
     s: PhantomData<S>,
@@ -169,14 +168,18 @@ pub struct Timer<T: Instance, S, W: Width, I, C>
 }
 
 impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, Periodic<U0>>
-    where T: Instance
+where
+    T: Instance,
 {
     pub fn periodic(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, Periodic<U0>> {
         // Set timer mode
         timer.as_timer0().mode.write(|w| w.mode().timer());
 
         // Set prescale value
-        timer.as_timer0().prescaler.write(|w| unsafe { w.bits(U0::VAL) } );
+        timer
+            .as_timer0()
+            .prescaler
+            .write(|w| unsafe { w.bits(U0::VAL) });
 
         // Set bit width
         timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
@@ -185,68 +188,125 @@ impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, Periodic<U0>>
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
         timer.as_timer0().events_compare[0].write(|w| w);
 
-        Timer::<T, Stopped, ThirtyTwo, Disabled, Periodic<U0>> { timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        Timer::<T, Stopped, ThirtyTwo, Disabled, Periodic<U0>> {
+            timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 }
 
 impl<T, W, I, P> Timer<T, Stopped, W, I, Periodic<P>>
-    where
+where
     T: Instance,
     W: Width,
     P: Prescaler,
 {
     pub fn set_prescale<P2: Prescaler>(self) -> Timer<T, Stopped, W, I, Periodic<P2>> {
-        self.timer.as_timer0().prescaler.write(|w| unsafe { w.bits(P2::VAL) });
-        Timer::<T, Stopped, W, I, Periodic<P2>> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        self.timer
+            .as_timer0()
+            .prescaler
+            .write(|w| unsafe { w.bits(P2::VAL) });
+        Timer::<T, Stopped, W, I, Periodic<P2>> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 
     pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, Periodic<P>> {
         self.timer.as_timer0().bitmode.write(|w| W2::set(w));
-        Timer::<T, Stopped, W2, I, Periodic<P>> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        Timer::<T, Stopped, W2, I, Periodic<P>> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 
     pub fn start(self) -> Timer<T, Started, W, I, Periodic<P>> {
-        self.timer.as_timer0().tasks_start.write(|w| w.tasks_start().set_bit());
-        Timer::<T, Started, W, I, Periodic<P>> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        self.timer
+            .as_timer0()
+            .tasks_start
+            .write(|w| w.tasks_start().set_bit());
+        Timer::<T, Started, W, I, Periodic<P>> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 }
 
 impl<T, W, I, P> Timer<T, Started, W, I, Periodic<P>>
-    where
+where
     T: Instance,
     W: Width,
     P: Prescaler,
 {
     pub fn stop(self) -> Timer<T, Stopped, W, I, Periodic<P>> {
-        self.timer.as_timer0().tasks_stop.write(|w| w.tasks_stop().set_bit());
-        Timer::<T, Stopped, W, I, Periodic<P>> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        self.timer
+            .as_timer0()
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
+        Timer::<T, Stopped, W, I, Periodic<P>> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 }
 
 impl<T, S, W, C> Timer<T, S, W, Enabled, C>
-    where
+where
     T: Instance,
     W: Width,
 {
     pub fn disable_interrupt(self) -> Timer<T, S, W, Disabled, C> {
-        self.timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Disabled, C> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        self.timer
+            .as_timer0()
+            .intenclr
+            .write(|w| w.compare0().set_bit());
+        Timer::<T, S, W, Disabled, C> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 }
 
 impl<T, S, W, C> Timer<T, S, W, Disabled, C>
-    where
+where
     T: Instance,
     W: Width,
 {
     pub fn enable_interrupt(self) -> Timer<T, S, W, Enabled, C> {
-        self.timer.as_timer0().intenset.write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Enabled, C> { timer: self.timer, s: PhantomData, w: PhantomData, i: PhantomData, c: PhantomData }
+        self.timer
+            .as_timer0()
+            .intenset
+            .write(|w| w.compare0().set_bit());
+        Timer::<T, S, W, Enabled, C> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
     }
 }
 
 impl<T, S, W, I, C> Timer<T, S, W, I, C>
-    where
+where
     T: Instance,
     W: Width,
 {
