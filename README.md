@@ -22,7 +22,7 @@ $ cargo install probe-run
 ### 1. Clone the project
 
 ```console
-$ git clone <missing> rtic-blinky
+$ git clone https://github.com/90degs2infty/rtic-blinky.git rtic-blinky
 ```
 
 ### 2. Run!
