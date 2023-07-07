@@ -6,28 +6,6 @@ use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
 
 use core::marker::PhantomData;
 
-// Inputs:
-// - Prescaler:
-//   - four bit to divide 16MHz input (four bit = 0..15)
-//   - frequency of timer (in timer mode) is 16MHz / 2 ^ prescale
-// - Mode: Periodic, Counter
-// - State: Running, Stopped/Cancelled/Inactive
-// - Capture: ?
-// - Clear: ?
-// - Interrupts:
-// - PPI stuff
-// - Overflow value: bit width (BITMODE register)
-//   - 0 - 16bit
-//   - 1 - 8bit
-//   - 2 - 24bit
-//   - 3 - 32bit
-
-// Outputs:
-// - Compare
-
-// Invariants
-// - Change Prescaler and bit with in stopped state only
-
 // ---------
 // Prescaler
 // ---------
