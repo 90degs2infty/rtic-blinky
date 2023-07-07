@@ -4,13 +4,17 @@ A very basic blinky based on [RTIC](https://rtic.rs/2/book/en/) and its [templat
 
 ## Dependencies
 
-### 1. `flip-link`
+### 1. `nRF52840-DK`
+
+This repository is targeted at a `nRF52840-DK` development kit.
+
+### 2. `flip-link`
 
 ```console
 $ cargo install flip-link
 ```
 
-### 2. `probe-run`
+### 3. `probe-run`
 
 ```console
 $ # make sure to install v0.2.0 or later
