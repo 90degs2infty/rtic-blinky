@@ -302,7 +302,7 @@ where
             .prescaler
             .write(|w| unsafe { w.bits(U0::VAL) });
 
-        Timer::<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+        Timer {
             timer,
             s: PhantomData,
             w: PhantomData,
@@ -349,7 +349,7 @@ where
     /// See `Width` for details.
     pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, C> {
         self.timer.as_timer0().bitmode.write(|w| W2::set(w));
-        Timer::<T, Stopped, W2, I, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -364,7 +364,7 @@ where
             .as_timer0()
             .tasks_start
             .write(|w| w.tasks_start().set_bit());
-        Timer::<T, Started, W, I, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -388,7 +388,7 @@ where
             .as_timer0()
             .prescaler
             .write(|w| unsafe { w.bits(P2::VAL) });
-        Timer::<T, Stopped, W, I, TimerMode<P2>> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -409,7 +409,7 @@ where
             .as_timer0()
             .tasks_stop
             .write(|w| w.tasks_stop().set_bit());
-        Timer::<T, Stopped, W, I, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -443,7 +443,7 @@ where
             .as_timer0()
             .intenclr
             .write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Disabled, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -464,7 +464,7 @@ where
             .as_timer0()
             .intenset
             .write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Enabled, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
