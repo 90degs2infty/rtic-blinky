@@ -442,4 +442,12 @@ where
     pub fn compare_against(&mut self, val: u32) {
         self.timer.as_timer0().cc[0].write(|w| unsafe { w.cc().bits(val) });
     }
+
+    /// Clear/Reset the timer.
+    ///
+    /// This works both in `Started` as well as in `Stopped` state.
+    /// See Nordic's documentation on `TASKS_CLEAR` for details.
+    pub fn reset(&mut self) {
+        self.timer.as_timer0().tasks_clear.write(|w| w.tasks_clear().set_bit());
+    }
 }
