@@ -2,7 +2,7 @@
 //!
 //! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
 
-use nrf52840_hal::{timer::Instance, pac::timer0::bitmode::W};
+use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
 
 use core::marker::PhantomData;
 
@@ -114,7 +114,6 @@ pub struct U15;
 
 /// Common interface to all prescale values
 pub trait Prescaler {
-
     /// The eventual value that gets written to the `PRESCALE` register.
     const VAL: u32;
 }
@@ -284,7 +283,10 @@ where
     /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
     pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
         // Make sure the timer is stopped
-        timer.as_timer0().tasks_stop.write(|w| w.tasks_stop().set_bit());
+        timer
+            .as_timer0()
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
 
         // Set bit width
         timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
@@ -318,7 +320,10 @@ where
 {
     pub fn counter(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode> {
         // Make sure the timer is stopped
-        timer.as_timer0().tasks_stop.write(|w| w.tasks_stop().set_bit());
+        timer
+            .as_timer0()
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
 
         // Set bit width
         timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
@@ -496,6 +501,9 @@ where
     /// This works both in `Started` as well as in `Stopped` state.
     /// See Nordic's documentation on `TASKS_CLEAR` for details.
     pub fn reset(&mut self) {
-        self.timer.as_timer0().tasks_clear.write(|w| w.tasks_clear().set_bit());
+        self.timer
+            .as_timer0()
+            .tasks_clear
+            .write(|w| w.tasks_clear().set_bit());
     }
 }
