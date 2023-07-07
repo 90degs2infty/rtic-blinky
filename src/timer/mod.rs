@@ -2,31 +2,9 @@
 //!
 //! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
 
-use nrf52840_hal::{timer::Instance, pac::timer0::bitmode::W};
+use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
 
 use core::marker::PhantomData;
-
-// Inputs:
-// - Prescaler:
-//   - four bit to divide 16MHz input (four bit = 0..15)
-//   - frequency of timer (in timer mode) is 16MHz / 2 ^ prescale
-// - Mode: Periodic, Counter
-// - State: Running, Stopped/Cancelled/Inactive
-// - Capture: ?
-// - Clear: ?
-// - Interrupts:
-// - PPI stuff
-// - Overflow value: bit width (BITMODE register)
-//   - 0 - 16bit
-//   - 1 - 8bit
-//   - 2 - 24bit
-//   - 3 - 32bit
-
-// Outputs:
-// - Compare
-
-// Invariants
-// - Change Prescaler and bit with in stopped state only
 
 // ---------
 // Prescaler
@@ -114,7 +92,6 @@ pub struct U15;
 
 /// Common interface to all prescale values
 pub trait Prescaler {
-
     /// The eventual value that gets written to the `PRESCALE` register.
     const VAL: u32;
 }
@@ -283,6 +260,19 @@ where
 {
     /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
     pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+        // Make sure the timer is stopped
+        timer
+            .as_timer0()
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
+
+        // Set bit width
+        timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
+
+        // Disable and clear interrupts
+        timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
+        timer.as_timer0().events_compare[0].write(|w| w);
+
         // Set timer mode
         timer.as_timer0().mode.write(|w| w.mode().timer());
 
@@ -292,6 +282,27 @@ where
             .prescaler
             .write(|w| unsafe { w.bits(U0::VAL) });
 
+        Timer {
+            timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+}
+
+impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode>
+where
+    T: Instance,
+{
+    pub fn counter(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode> {
+        // Make sure the timer is stopped
+        timer
+            .as_timer0()
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
+
         // Set bit width
         timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
 
@@ -299,8 +310,45 @@ where
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
         timer.as_timer0().events_compare[0].write(|w| w);
 
-        Timer::<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+        // Set counter mode
+        timer.as_timer0().mode.write(|w| w.mode().counter());
+
+        Timer {
             timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+}
+impl<T, W, I, C> Timer<T, Stopped, W, I, C>
+where
+    T: Instance,
+    W: Width,
+{
+    /// Set a timer's bit with.
+    ///
+    /// See `Width` for details.
+    pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, C> {
+        self.timer.as_timer0().bitmode.write(|w| W2::set(w));
+        Timer {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+
+    /// Start a timer.
+    pub fn start(self) -> Timer<T, Started, W, I, C> {
+        self.timer
+            .as_timer0()
+            .tasks_start
+            .write(|w| w.tasks_start().set_bit());
+        Timer {
+            timer: self.timer,
             s: PhantomData,
             w: PhantomData,
             i: PhantomData,
@@ -323,36 +371,7 @@ where
             .as_timer0()
             .prescaler
             .write(|w| unsafe { w.bits(P2::VAL) });
-        Timer::<T, Stopped, W, I, TimerMode<P2>> {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
-    }
-
-    /// Set a timer's bit with.
-    ///
-    /// See `Width` for details.
-    pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, TimerMode<P>> {
-        self.timer.as_timer0().bitmode.write(|w| W2::set(w));
-        Timer::<T, Stopped, W2, I, TimerMode<P>> {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
-    }
-
-    /// Start a timer.
-    pub fn start(self) -> Timer<T, Started, W, I, TimerMode<P>> {
-        self.timer
-            .as_timer0()
-            .tasks_start
-            .write(|w| w.tasks_start().set_bit());
-        Timer::<T, Started, W, I, TimerMode<P>> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -362,25 +381,37 @@ where
     }
 }
 
-impl<T, W, I, P> Timer<T, Started, W, I, TimerMode<P>>
+impl<T, W, I, C> Timer<T, Started, W, I, C>
 where
     T: Instance,
     W: Width,
-    P: Prescaler,
 {
     /// Stop a timer.
-    pub fn stop(self) -> Timer<T, Stopped, W, I, TimerMode<P>> {
+    pub fn stop(self) -> Timer<T, Stopped, W, I, C> {
         self.timer
             .as_timer0()
             .tasks_stop
             .write(|w| w.tasks_stop().set_bit());
-        Timer::<T, Stopped, W, I, TimerMode<P>> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
             i: PhantomData,
             c: PhantomData,
         }
+    }
+}
+
+impl<T, W, I> Timer<T, Started, W, I, CounterMode>
+where
+    T: Instance,
+    W: Width,
+{
+    pub fn tick(&mut self) {
+        self.timer
+            .as_timer0()
+            .tasks_count
+            .write(|w| w.tasks_count().set_bit());
     }
 }
 
@@ -395,7 +426,7 @@ where
             .as_timer0()
             .intenclr
             .write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Disabled, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -416,7 +447,7 @@ where
             .as_timer0()
             .intenset
             .write(|w| w.compare0().set_bit());
-        Timer::<T, S, W, Enabled, C> {
+        Timer {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -441,5 +472,16 @@ where
     /// See Nordic's documentation on `CC[0]` register for details.
     pub fn compare_against(&mut self, val: u32) {
         self.timer.as_timer0().cc[0].write(|w| unsafe { w.cc().bits(val) });
+    }
+
+    /// Clear/Reset the timer.
+    ///
+    /// This works both in `Started` as well as in `Stopped` state.
+    /// See Nordic's documentation on `TASKS_CLEAR` for details.
+    pub fn reset(&mut self) {
+        self.timer
+            .as_timer0()
+            .tasks_clear
+            .write(|w| w.tasks_clear().set_bit());
     }
 }

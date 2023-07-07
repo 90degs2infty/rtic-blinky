@@ -1,6 +1,10 @@
 # `rtic-blinky`
 
-A very basic blinky based on [RTIC](https://rtic.rs/2/book/en/) and its [template](https://github.com/rtic-rs/defmt-app-template) implemented for the `nRF52840` chip.
+A basic blinky based on [RTIC](https://rtic.rs/2/book/en/) and its [template](https://github.com/rtic-rs/defmt-app-template) implemented for the `nRF52840` chip.
+
+The blinky will... well... blink a pair of LEDs.
+Driven by the `nRF52480`'s timer peripheral, the `nRF52480-DK`'s LEDs `LED1` and `LED2` get blinked alternatingly.
+Each LED gets blinked twice before switching to the other one.
 
 ## Dependencies
 
