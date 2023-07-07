@@ -16,7 +16,7 @@ mod app {
         timer::Instance,
     };
 
-    use rtic_blinky::timer::{Enabled, Periodic, Started, Timer, TwentyFour, U0};
+    use rtic_blinky::timer::{Enabled, TimerMode, Started, Timer, TwentyFour, U0};
 
     // Shared resources go here
     #[shared]
@@ -28,7 +28,7 @@ mod app {
     #[local]
     struct Local {
         led: P0_13<Output<PushPull>>,
-        timer: Timer<TIMER1, Started, TwentyFour, Enabled, Periodic<U0>>,
+        timer: Timer<TIMER1, Started, TwentyFour, Enabled, TimerMode<U0>>,
     }
 
     #[init]
@@ -41,7 +41,7 @@ mod app {
         let led = p0.p0_13.into_push_pull_output(Level::High);
 
         // Timer
-        let mut timer = Timer::periodic(p.TIMER1)
+        let mut timer = Timer::timer(p.TIMER1)
             .set_prescale::<U0>()
             .set_counterwidth::<TwentyFour>();
 
