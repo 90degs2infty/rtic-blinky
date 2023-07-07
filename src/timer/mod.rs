@@ -1,4 +1,8 @@
-use nrf52840_hal::timer::Instance;
+//! A basic hal-level interface to a timer's timer mode.
+//!
+//! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
+
+use nrf52840_hal::{timer::Instance, pac::timer0::bitmode::W};
 
 use core::marker::PhantomData;
 
@@ -24,25 +28,94 @@ use core::marker::PhantomData;
 // Invariants
 // - Change Prescaler and bit with in stopped state only
 
+// ---------
 // Prescaler
+// ---------
+
+/// Type encoding a prescale value of 0.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U0;
+
+/// Type encoding a prescale value of 1.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U1;
+
+/// Type encoding a prescale value of 2.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U2;
+
+/// Type encoding a prescale value of 3.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U3;
+
+/// Type encoding a prescale value of 4.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U4;
+
+/// Type encoding a prescale value of 5.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U5;
+
+/// Type encoding a prescale value of 6.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U6;
+
+/// Type encoding a prescale value of 7.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U7;
+
+/// Type encoding a prescale value of 8.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U8;
+
+/// Type encoding a prescale value of 9.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U9;
+
+/// Type encoding a prescale value of 10.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U10;
+
+/// Type encoding a prescale value of 11.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U11;
+
+/// Type encoding a prescale value of 12.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U12;
+
+/// Type encoding a prescale value of 13.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U13;
+
+/// Type encoding a prescale value of 14.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U14;
+
+/// Type encoding a prescale value of 15.
+///
+/// See Nordic's docs on the `PRESCALER` register for details.
 pub struct U15;
 
+/// Common interface to all prescale values
 pub trait Prescaler {
+
+    /// The eventual value that gets written to the `PRESCALE` register.
     const VAL: u32;
 }
 
@@ -110,13 +183,31 @@ impl Prescaler for U15 {
     const VAL: u32 = 15;
 }
 
+// -----------------
 // Counter bit width
+// -----------------
+
+/// Type indicating an eight bit wide timer.
+///
+/// See Nordic's docs on the `BITMODE` register for details.
 pub struct Eight;
+
+/// Type indicating an sixteen bit wide timer.
+///
+/// See Nordic's docs on the `BITMODE` register for details.
 pub struct Sixteen;
+
+/// Type indicating an twentyfour bit wide timer.
+///
+/// See Nordic's docs on the `BITMODE` register for details.
 pub struct TwentyFour;
+
+/// Type indicating an thirtytwo bit wide timer.
+///
+/// See Nordic's docs on the `BITMODE` register for details.
 pub struct ThirtyTwo;
 
-use nrf52840_hal::pac::timer0::bitmode::W;
+/// Common interface to all bitmodes.
 pub trait Width {
     fn set(w: &mut W) -> &mut W;
 }
@@ -148,19 +239,36 @@ impl Width for ThirtyTwo {
 // -----------------------------
 // Mode dependent Configurations
 // -----------------------------
+
+/// Type indicating a timer running in counter mode.
 pub struct CounterMode;
+
+/// Type indicating a timer running in timer mode.
 pub struct TimerMode<P: Prescaler> {
     prescaler: PhantomData<P>,
 }
 
+// -----
 // State
+// -----
+
+/// Type indicating a running timer.
 pub struct Started;
+
+/// Type indicating a not-running timer.
 pub struct Stopped;
 
+// ----------
 // Interrupts
+// ----------
+
+/// Type indicating a timer triggering interrupts.
 pub struct Enabled;
+
+/// Type indicating a timer not triggering interrupts.
 pub struct Disabled;
 
+/// HAL-level interface to timer peripheral.
 pub struct Timer<T: Instance, S, W: Width, I, C> {
     timer: T,
     w: PhantomData<W>,
@@ -173,6 +281,7 @@ impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>>
 where
     T: Instance,
 {
+    /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
     pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
         // Set timer mode
         timer.as_timer0().mode.write(|w| w.mode().timer());
@@ -206,6 +315,9 @@ where
     W: Width,
     P: Prescaler,
 {
+    /// Set a timer's prescale value.
+    ///
+    /// See `Prescaler` for details.
     pub fn set_prescale<P2: Prescaler>(self) -> Timer<T, Stopped, W, I, TimerMode<P2>> {
         self.timer
             .as_timer0()
@@ -220,6 +332,9 @@ where
         }
     }
 
+    /// Set a timer's bit with.
+    ///
+    /// See `Width` for details.
     pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, TimerMode<P>> {
         self.timer.as_timer0().bitmode.write(|w| W2::set(w));
         Timer::<T, Stopped, W2, I, TimerMode<P>> {
@@ -231,6 +346,7 @@ where
         }
     }
 
+    /// Start a timer.
     pub fn start(self) -> Timer<T, Started, W, I, TimerMode<P>> {
         self.timer
             .as_timer0()
@@ -252,6 +368,7 @@ where
     W: Width,
     P: Prescaler,
 {
+    /// Stop a timer.
     pub fn stop(self) -> Timer<T, Stopped, W, I, TimerMode<P>> {
         self.timer
             .as_timer0()
@@ -272,6 +389,7 @@ where
     T: Instance,
     W: Width,
 {
+    /// Disable interrupt 0 for timer.
     pub fn disable_interrupt(self) -> Timer<T, S, W, Disabled, C> {
         self.timer
             .as_timer0()
@@ -292,6 +410,7 @@ where
     T: Instance,
     W: Width,
 {
+    /// Enable interrupt 0 for timer.
     pub fn enable_interrupt(self) -> Timer<T, S, W, Enabled, C> {
         self.timer
             .as_timer0()
@@ -312,10 +431,14 @@ where
     T: Instance,
     W: Width,
 {
+    /// Unpend interrupt 0 for timer.
     pub fn unpend_interrupt(&mut self) {
         self.timer.as_timer0().events_compare[0].write(|w| w.events_compare().clear_bit());
     }
 
+    /// Set compare value 0 for timer.
+    ///
+    /// See Nordic's documentation on `CC[0]` register for details.
     pub fn compare_against(&mut self, val: u32) {
         self.timer.as_timer0().cc[0].write(|w| unsafe { w.cc().bits(val) });
     }
