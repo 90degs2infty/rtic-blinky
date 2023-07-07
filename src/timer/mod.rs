@@ -283,6 +283,16 @@ where
 {
     /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
     pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+        // Make sure the timer is stopped
+        timer.as_timer0().tasks_stop.write(|w| w.tasks_stop().set_bit());
+
+        // Set bit width
+        timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
+
+        // Disable and clear interrupts
+        timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
+        timer.as_timer0().events_compare[0].write(|w| w);
+
         // Set timer mode
         timer.as_timer0().mode.write(|w| w.mode().timer());
 
@@ -292,6 +302,24 @@ where
             .prescaler
             .write(|w| unsafe { w.bits(U0::VAL) });
 
+        Timer::<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+            timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+}
+
+impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode>
+where
+    T: Instance,
+{
+    pub fn counter(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode> {
+        // Make sure the timer is stopped
+        timer.as_timer0().tasks_stop.write(|w| w.tasks_stop().set_bit());
+
         // Set bit width
         timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
 
@@ -299,8 +327,45 @@ where
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
         timer.as_timer0().events_compare[0].write(|w| w);
 
-        Timer::<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+        // Set counter mode
+        timer.as_timer0().mode.write(|w| w.mode().counter());
+
+        Timer {
             timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+}
+impl<T, W, I, C> Timer<T, Stopped, W, I, C>
+where
+    T: Instance,
+    W: Width,
+{
+    /// Set a timer's bit with.
+    ///
+    /// See `Width` for details.
+    pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, C> {
+        self.timer.as_timer0().bitmode.write(|w| W2::set(w));
+        Timer::<T, Stopped, W2, I, C> {
+            timer: self.timer,
+            s: PhantomData,
+            w: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    }
+
+    /// Start a timer.
+    pub fn start(self) -> Timer<T, Started, W, I, C> {
+        self.timer
+            .as_timer0()
+            .tasks_start
+            .write(|w| w.tasks_start().set_bit());
+        Timer::<T, Started, W, I, C> {
+            timer: self.timer,
             s: PhantomData,
             w: PhantomData,
             i: PhantomData,
@@ -331,28 +396,20 @@ where
             c: PhantomData,
         }
     }
+}
 
-    /// Set a timer's bit with.
-    ///
-    /// See `Width` for details.
-    pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, TimerMode<P>> {
-        self.timer.as_timer0().bitmode.write(|w| W2::set(w));
-        Timer::<T, Stopped, W2, I, TimerMode<P>> {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
-    }
-
-    /// Start a timer.
-    pub fn start(self) -> Timer<T, Started, W, I, TimerMode<P>> {
+impl<T, W, I, C> Timer<T, Started, W, I, C>
+where
+    T: Instance,
+    W: Width,
+{
+    /// Stop a timer.
+    pub fn stop(self) -> Timer<T, Stopped, W, I, C> {
         self.timer
             .as_timer0()
-            .tasks_start
-            .write(|w| w.tasks_start().set_bit());
-        Timer::<T, Started, W, I, TimerMode<P>> {
+            .tasks_stop
+            .write(|w| w.tasks_stop().set_bit());
+        Timer::<T, Stopped, W, I, C> {
             timer: self.timer,
             s: PhantomData,
             w: PhantomData,
@@ -362,25 +419,16 @@ where
     }
 }
 
-impl<T, W, I, P> Timer<T, Started, W, I, TimerMode<P>>
+impl<T, W, I> Timer<T, Started, W, I, CounterMode>
 where
     T: Instance,
     W: Width,
-    P: Prescaler,
 {
-    /// Stop a timer.
-    pub fn stop(self) -> Timer<T, Stopped, W, I, TimerMode<P>> {
+    pub fn tick(&mut self) {
         self.timer
             .as_timer0()
-            .tasks_stop
-            .write(|w| w.tasks_stop().set_bit());
-        Timer::<T, Stopped, W, I, TimerMode<P>> {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+            .tasks_count
+            .write(|w| w.tasks_count().set_bit());
     }
 }
 
