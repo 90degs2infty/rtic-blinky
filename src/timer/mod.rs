@@ -6,158 +6,45 @@ use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
 
 use core::marker::PhantomData;
 
+macro_rules! define_prescaler {
+    ($num:expr) => {
+        paste::paste! {
+            #[doc = "Type encoding a prescale value of " [<$num>] "."]
+            #[doc = "See Nordic's docs on the `PRESCALER` register for details."]
+            pub struct [<U $num>];
+
+            impl Prescaler for [<U $num>] {
+                const VAL: u32 = $num;
+            }
+        }
+    };
+}
+
 // ---------
 // Prescaler
 // ---------
 
-/// Type encoding a prescale value of 0.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U0;
-
-/// Type encoding a prescale value of 1.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U1;
-
-/// Type encoding a prescale value of 2.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U2;
-
-/// Type encoding a prescale value of 3.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U3;
-
-/// Type encoding a prescale value of 4.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U4;
-
-/// Type encoding a prescale value of 5.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U5;
-
-/// Type encoding a prescale value of 6.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U6;
-
-/// Type encoding a prescale value of 7.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U7;
-
-/// Type encoding a prescale value of 8.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U8;
-
-/// Type encoding a prescale value of 9.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U9;
-
-/// Type encoding a prescale value of 10.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U10;
-
-/// Type encoding a prescale value of 11.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U11;
-
-/// Type encoding a prescale value of 12.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U12;
-
-/// Type encoding a prescale value of 13.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U13;
-
-/// Type encoding a prescale value of 14.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U14;
-
-/// Type encoding a prescale value of 15.
-///
-/// See Nordic's docs on the `PRESCALER` register for details.
-pub struct U15;
+define_prescaler!(0);
+define_prescaler!(1);
+define_prescaler!(2);
+define_prescaler!(3);
+define_prescaler!(4);
+define_prescaler!(5);
+define_prescaler!(6);
+define_prescaler!(7);
+define_prescaler!(8);
+define_prescaler!(9);
+define_prescaler!(10);
+define_prescaler!(11);
+define_prescaler!(12);
+define_prescaler!(13);
+define_prescaler!(14);
+define_prescaler!(15);
 
 /// Common interface to all prescale values
 pub trait Prescaler {
     /// The eventual value that gets written to the `PRESCALE` register.
     const VAL: u32;
-}
-
-impl Prescaler for U0 {
-    const VAL: u32 = 0;
-}
-
-impl Prescaler for U1 {
-    const VAL: u32 = 1;
-}
-
-impl Prescaler for U2 {
-    const VAL: u32 = 2;
-}
-
-impl Prescaler for U3 {
-    const VAL: u32 = 3;
-}
-
-impl Prescaler for U4 {
-    const VAL: u32 = 4;
-}
-
-impl Prescaler for U5 {
-    const VAL: u32 = 5;
-}
-
-impl Prescaler for U6 {
-    const VAL: u32 = 6;
-}
-
-impl Prescaler for U7 {
-    const VAL: u32 = 7;
-}
-
-impl Prescaler for U8 {
-    const VAL: u32 = 8;
-}
-
-impl Prescaler for U9 {
-    const VAL: u32 = 9;
-}
-
-impl Prescaler for U10 {
-    const VAL: u32 = 10;
-}
-
-impl Prescaler for U11 {
-    const VAL: u32 = 11;
-}
-
-impl Prescaler for U12 {
-    const VAL: u32 = 12;
-}
-
-impl Prescaler for U13 {
-    const VAL: u32 = 13;
-}
-
-impl Prescaler for U14 {
-    const VAL: u32 = 14;
-}
-
-impl Prescaler for U15 {
-    const VAL: u32 = 15;
 }
 
 // -----------------
