@@ -12,7 +12,7 @@ pub trait Width {
 }
 
 macro_rules! define_width {
-    ($w:literal, $m:ident) => {
+    ($w:literal) => {
         paste::paste! {
             #[doc = "Type encoding a bit with of " [<$w>] " bits."]
             #[doc = "See Nordic's docs on the `BITMODE` register for details."]
@@ -20,14 +20,14 @@ macro_rules! define_width {
 
             impl Width for [< W $w >] {
                 fn set(w: &mut Writer) -> &mut Writer {
-                    w.bitmode().$m()
+                    w.bitmode().[< _ $w bit >]()
                 }
             }
         }
     };
 }
 
-define_width!(8, _08bit);
-define_width!(16, _16bit);
-define_width!(24, _24bit);
-define_width!(32, _32bit);
+define_width!(08);
+define_width!(16);
+define_width!(24);
+define_width!(32);
