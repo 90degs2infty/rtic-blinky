@@ -11,7 +11,7 @@ pub trait Prescaler: private::Sealed {
 }
 
 macro_rules! define_prescaler {
-    ($num:expr) => {
+    ($num:literal) => {
         paste::paste! {
             #[doc = "Type encoding a prescale value of " [<$num>] "."]
             #[doc = "See Nordic's docs on the `PRESCALER` register for details."]
