@@ -26,10 +26,6 @@ macro_rules! define_prescaler {
     };
 }
 
-// ---------
-// Prescaler
-// ---------
-
 define_prescaler!(0);
 define_prescaler!(1);
 define_prescaler!(2);
