@@ -17,7 +17,9 @@ mod app {
     };
 
     use rtic_blinky::timer::{
-        prescaler::P0, CounterMode, Eight, Enabled, Started, Timer, TimerMode, TwentyFour,
+        bitmode::{W24, W8},
+        prescaler::P0,
+        CounterMode, Enabled, Started, Timer, TimerMode,
     };
 
     use core::fmt::Debug;
@@ -25,7 +27,7 @@ mod app {
     // Shared resources go here
     #[shared]
     struct Shared {
-        counter: Timer<TIMER2, Started, Eight, Enabled, CounterMode>,
+        counter: Timer<TIMER2, Started, W8, Enabled, CounterMode>,
         leds: (P0_13<Output<PushPull>>, P0_14<Output<PushPull>>),
         led_switch: bool,
     }
@@ -33,7 +35,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        timer: Timer<TIMER1, Started, TwentyFour, Enabled, TimerMode<P0>>,
+        timer: Timer<TIMER1, Started, W24, Enabled, TimerMode<P0>>,
     }
 
     #[init]
@@ -50,10 +52,10 @@ mod app {
         // Timer
         let mut timer = Timer::timer(p.TIMER1)
             .set_prescale::<P0>()
-            .set_counterwidth::<TwentyFour>();
+            .set_counterwidth::<W24>();
 
         // Counter
-        let mut counter = Timer::counter(p.TIMER2).set_counterwidth::<Eight>();
+        let mut counter = Timer::counter(p.TIMER2).set_counterwidth::<W8>();
 
         // Interrupts
         timer.compare_against(0);

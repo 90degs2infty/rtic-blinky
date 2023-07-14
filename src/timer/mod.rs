@@ -2,64 +2,12 @@
 //!
 //! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
 
-use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
+use nrf52840_hal::timer::Instance;
 
 use core::marker::PhantomData;
 
+pub mod bitmode;
 pub mod prescaler;
-
-// -----------------
-// Counter bit width
-// -----------------
-
-/// Type indicating an eight bit wide timer.
-///
-/// See Nordic's docs on the `BITMODE` register for details.
-pub struct Eight;
-
-/// Type indicating an sixteen bit wide timer.
-///
-/// See Nordic's docs on the `BITMODE` register for details.
-pub struct Sixteen;
-
-/// Type indicating an twentyfour bit wide timer.
-///
-/// See Nordic's docs on the `BITMODE` register for details.
-pub struct TwentyFour;
-
-/// Type indicating an thirtytwo bit wide timer.
-///
-/// See Nordic's docs on the `BITMODE` register for details.
-pub struct ThirtyTwo;
-
-/// Common interface to all bitmodes.
-pub trait Width {
-    fn set(w: &mut W) -> &mut W;
-}
-
-impl Width for Eight {
-    fn set(w: &mut W) -> &mut W {
-        w.bitmode()._08bit()
-    }
-}
-
-impl Width for Sixteen {
-    fn set(w: &mut W) -> &mut W {
-        w.bitmode()._16bit()
-    }
-}
-
-impl Width for TwentyFour {
-    fn set(w: &mut W) -> &mut W {
-        w.bitmode()._24bit()
-    }
-}
-
-impl Width for ThirtyTwo {
-    fn set(w: &mut W) -> &mut W {
-        w.bitmode()._32bit()
-    }
-}
 
 // -----------------------------
 // Mode dependent Configurations
@@ -96,6 +44,8 @@ pub struct Enabled;
 pub struct Disabled;
 
 /// HAL-level interface to timer peripheral.
+use crate::timer::bitmode::{Width, W32};
+
 pub struct Timer<T: Instance, S, W: Width, I, C> {
     timer: T,
     w: PhantomData<W>,
@@ -104,12 +54,12 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     c: PhantomData<C>,
 }
 
-impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<P0>>
+impl<T> Timer<T, Stopped, W32, Disabled, TimerMode<P0>>
 where
     T: Instance,
 {
     /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
-    pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<P0>> {
+    pub fn timer(timer: T) -> Timer<T, Stopped, W32, Disabled, TimerMode<P0>> {
         // Make sure the timer is stopped
         timer
             .as_timer0()
@@ -117,7 +67,7 @@ where
             .write(|w| w.tasks_stop().set_bit());
 
         // Set bit width
-        timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
+        timer.as_timer0().bitmode.write(|w| W32::set(w));
 
         // Disable and clear interrupts
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
@@ -142,11 +92,11 @@ where
     }
 }
 
-impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode>
+impl<T> Timer<T, Stopped, W32, Disabled, CounterMode>
 where
     T: Instance,
 {
-    pub fn counter(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, CounterMode> {
+    pub fn counter(timer: T) -> Timer<T, Stopped, W32, Disabled, CounterMode> {
         // Make sure the timer is stopped
         timer
             .as_timer0()
@@ -154,7 +104,7 @@ where
             .write(|w| w.tasks_stop().set_bit());
 
         // Set bit width
-        timer.as_timer0().bitmode.write(|w| ThirtyTwo::set(w));
+        timer.as_timer0().bitmode.write(|w| W32::set(w));
 
         // Disable and clear interrupts
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
