@@ -15,11 +15,11 @@ macro_rules! define_prescaler {
         paste::paste! {
             #[doc = "Type encoding a prescale value of " [<$num>] "."]
             #[doc = "See Nordic's docs on the `PRESCALER` register for details."]
-            pub struct [<U $num>];
+            pub struct [<P $num>];
 
-            impl private::Sealed for [<U $num >] {}
+            impl private::Sealed for [<P $num >] {}
 
-            impl Prescaler for [<U $num>] {
+            impl Prescaler for [<P $num>] {
                 const VAL: u32 = $num;
             }
         }

@@ -65,7 +65,7 @@ impl Width for ThirtyTwo {
 // Mode dependent Configurations
 // -----------------------------
 
-use crate::timer::prescaler::{Prescaler, U0};
+use crate::timer::prescaler::{Prescaler, P0};
 
 /// Type indicating a timer running in counter mode.
 pub struct CounterMode;
@@ -104,12 +104,12 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     c: PhantomData<C>,
 }
 
-impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>>
+impl<T> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<P0>>
 where
     T: Instance,
 {
     /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
-    pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<U0>> {
+    pub fn timer(timer: T) -> Timer<T, Stopped, ThirtyTwo, Disabled, TimerMode<P0>> {
         // Make sure the timer is stopped
         timer
             .as_timer0()
@@ -130,7 +130,7 @@ where
         timer
             .as_timer0()
             .prescaler
-            .write(|w| unsafe { w.bits(U0::VAL) });
+            .write(|w| unsafe { w.bits(P0::VAL) });
 
         Timer {
             timer,

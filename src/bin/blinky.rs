@@ -17,7 +17,7 @@ mod app {
     };
 
     use rtic_blinky::timer::{
-        prescaler::U0, CounterMode, Eight, Enabled, Started, Timer, TimerMode, TwentyFour,
+        prescaler::P0, CounterMode, Eight, Enabled, Started, Timer, TimerMode, TwentyFour,
     };
 
     use core::fmt::Debug;
@@ -33,7 +33,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        timer: Timer<TIMER1, Started, TwentyFour, Enabled, TimerMode<U0>>,
+        timer: Timer<TIMER1, Started, TwentyFour, Enabled, TimerMode<P0>>,
     }
 
     #[init]
@@ -49,7 +49,7 @@ mod app {
 
         // Timer
         let mut timer = Timer::timer(p.TIMER1)
-            .set_prescale::<U0>()
+            .set_prescale::<P0>()
             .set_counterwidth::<TwentyFour>();
 
         // Counter
