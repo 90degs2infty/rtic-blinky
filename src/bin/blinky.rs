@@ -84,9 +84,8 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         defmt::info!("idle");
 
-        loop {
-            continue;
-        }
+        #[allow(clippy::empty_loop)]
+        loop {}
     }
 
     fn toggle_led<T: StatefulOutputPin>(led: &mut T)
