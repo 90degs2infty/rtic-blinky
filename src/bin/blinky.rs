@@ -17,7 +17,7 @@ mod app {
     };
 
     use rtic_blinky::timer::{
-        CounterMode, Eight, Enabled, Started, Timer, TimerMode, TwentyFour, U0,
+        prescaler::U0, CounterMode, Eight, Enabled, Started, Timer, TimerMode, TwentyFour,
     };
 
     use core::fmt::Debug;

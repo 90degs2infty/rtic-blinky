@@ -6,46 +6,7 @@ use nrf52840_hal::{pac::timer0::bitmode::W, timer::Instance};
 
 use core::marker::PhantomData;
 
-macro_rules! define_prescaler {
-    ($num:expr) => {
-        paste::paste! {
-            #[doc = "Type encoding a prescale value of " [<$num>] "."]
-            #[doc = "See Nordic's docs on the `PRESCALER` register for details."]
-            pub struct [<U $num>];
-
-            impl Prescaler for [<U $num>] {
-                const VAL: u32 = $num;
-            }
-        }
-    };
-}
-
-// ---------
-// Prescaler
-// ---------
-
-define_prescaler!(0);
-define_prescaler!(1);
-define_prescaler!(2);
-define_prescaler!(3);
-define_prescaler!(4);
-define_prescaler!(5);
-define_prescaler!(6);
-define_prescaler!(7);
-define_prescaler!(8);
-define_prescaler!(9);
-define_prescaler!(10);
-define_prescaler!(11);
-define_prescaler!(12);
-define_prescaler!(13);
-define_prescaler!(14);
-define_prescaler!(15);
-
-/// Common interface to all prescale values
-pub trait Prescaler {
-    /// The eventual value that gets written to the `PRESCALE` register.
-    const VAL: u32;
-}
+pub mod prescaler;
 
 // -----------------
 // Counter bit width
@@ -103,6 +64,8 @@ impl Width for ThirtyTwo {
 // -----------------------------
 // Mode dependent Configurations
 // -----------------------------
+
+use crate::timer::prescaler::{Prescaler, U0};
 
 /// Type indicating a timer running in counter mode.
 pub struct CounterMode;
