@@ -111,9 +111,9 @@ mod app {
 
         (ls, leds).lock(|ls, leds| {
             if *ls {
-                toggle_led(&mut leds.1)
+                toggle_led(&mut leds.1);
             } else {
-                toggle_led(&mut leds.0)
+                toggle_led(&mut leds.0);
             };
         });
 
