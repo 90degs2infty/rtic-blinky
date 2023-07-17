@@ -18,10 +18,11 @@ mod app {
 
     use rtic_blinky::timer::{
         bitmode::{W08, W24},
+        interrupts::Enabled,
         mode::{Counter as CounterMode, Timer as TimerMode},
         prescaler::P0,
         state::Started,
-        Enabled, Timer,
+        Timer,
     };
 
     use core::fmt::Debug;

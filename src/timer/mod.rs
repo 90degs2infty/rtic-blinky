@@ -2,27 +2,18 @@
 //!
 //! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
 
-use nrf52840_hal::timer::Instance;
-
-use core::marker::PhantomData;
-
 pub mod bitmode;
+pub mod interrupts;
 pub mod mode;
 pub mod prescaler;
 pub mod state;
 
-// ----------
-// Interrupts
-// ----------
-
-/// Type indicating a timer triggering interrupts.
-pub struct Enabled;
-
-/// Type indicating a timer not triggering interrupts.
-pub struct Disabled;
+use core::marker::PhantomData;
+use nrf52840_hal::timer::Instance;
 
 use crate::timer::{
     bitmode::{Width, W32},
+    interrupts::{Disabled, Enabled},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
