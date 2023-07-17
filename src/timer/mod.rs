@@ -9,16 +9,7 @@ use core::marker::PhantomData;
 pub mod bitmode;
 pub mod mode;
 pub mod prescaler;
-
-// -----
-// State
-// -----
-
-/// Type indicating a running timer.
-pub struct Started;
-
-/// Type indicating a not-running timer.
-pub struct Stopped;
+pub mod state;
 
 // ----------
 // Interrupts
@@ -34,6 +25,7 @@ use crate::timer::{
     bitmode::{Width, W32},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
+    state::{Started, Stopped},
 };
 
 /// HAL-level interface to timer peripheral.

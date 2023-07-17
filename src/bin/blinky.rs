@@ -20,7 +20,8 @@ mod app {
         bitmode::{W08, W24},
         mode::{Counter as CounterMode, Timer as TimerMode},
         prescaler::P0,
-        Enabled, Started, Timer,
+        state::Started,
+        Enabled, Timer,
     };
 
     use core::fmt::Debug;
