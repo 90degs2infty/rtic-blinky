@@ -7,21 +7,8 @@ use nrf52840_hal::timer::Instance;
 use core::marker::PhantomData;
 
 pub mod bitmode;
+pub mod mode;
 pub mod prescaler;
-
-// -----------------------------
-// Mode dependent Configurations
-// -----------------------------
-
-use crate::timer::prescaler::{Prescaler, P0};
-
-/// Type indicating a timer running in counter mode.
-pub struct CounterMode;
-
-/// Type indicating a timer running in timer mode.
-pub struct TimerMode<P: Prescaler> {
-    prescaler: PhantomData<P>,
-}
 
 // -----
 // State
@@ -43,9 +30,13 @@ pub struct Enabled;
 /// Type indicating a timer not triggering interrupts.
 pub struct Disabled;
 
-/// HAL-level interface to timer peripheral.
-use crate::timer::bitmode::{Width, W32};
+use crate::timer::{
+    bitmode::{Width, W32},
+    mode::{Counter as CounterMode, Timer as TimerMode},
+    prescaler::{Prescaler, P0},
+};
 
+/// HAL-level interface to timer peripheral.
 pub struct Timer<T: Instance, S, W: Width, I, C> {
     timer: T,
     w: PhantomData<W>,
