@@ -1,3 +1,7 @@
+//! Hal-level interface to a timer's bitmode.
+//!
+//! See [Nordic's docs](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29) for details.
+
 use nrf52840_hal::pac::timer0::bitmode::W as Writer;
 
 mod private {
@@ -15,7 +19,7 @@ macro_rules! define_width {
     ($w:literal) => {
         paste::paste! {
             #[doc = "Type encoding a bit with of " [<$w>] " bits."]
-            #[doc = "See Nordic's docs on the `BITMODE` register for details."]
+            #[doc = "See [Nordic's docs on the `BITMODE` register](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_11#register.BITMODE) for details."]
             pub struct [< W $w >] {}
 
             impl Width for [< W $w >] {
