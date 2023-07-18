@@ -1,3 +1,7 @@
+//! Hal-level interface to a timer's prescaler values.
+//!
+//! See [Nordic's docs](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29) for details.
+
 mod private {
     pub trait Sealed {}
 }
@@ -6,7 +10,7 @@ mod private {
 ///
 /// This trait is sealed and not meant to be implemented outside this crate.
 pub trait Prescaler: private::Sealed {
-    /// The eventual value that gets written to the `PRESCALE` register.
+    /// The eventual value that gets written to the [`PRESCALER`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_12#register.PRESCALER) register.
     const VAL: u32;
 }
 
