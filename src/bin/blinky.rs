@@ -18,7 +18,7 @@ mod app {
 
     use rtic_blinky::timer::{
         bitmode::{W08, W24},
-        interrupts::Enabled,
+        interrupts::{Disabled, Enabled, Interrupt},
         mode::{Counter as CounterMode, Timer as TimerMode},
         prescaler::P0,
         state::Started,
@@ -27,10 +27,12 @@ mod app {
 
     use core::fmt::Debug;
 
+    type IEn0 = Interrupt<Enabled, Disabled, Disabled, Disabled>;
+
     // Shared resources go here
     #[shared]
     struct Shared {
-        counter: Timer<TIMER2, Started, W08, Enabled, CounterMode>,
+        counter: Timer<TIMER2, Started, W08, IEn0, CounterMode>,
         leds: (P0_13<Output<PushPull>>, P0_14<Output<PushPull>>),
         led_switch: bool,
     }
@@ -38,7 +40,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        timer: Timer<TIMER1, Started, W24, Enabled, TimerMode<P0>>,
+        timer: Timer<TIMER1, Started, W24, IEn0, TimerMode<P0>>,
     }
 
     #[init]

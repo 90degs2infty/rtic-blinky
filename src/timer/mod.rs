@@ -15,7 +15,7 @@ use nrf52840_hal::timer::Instance;
 
 use crate::timer::{
     bitmode::{Width, W32},
-    interrupts::{Disabled, Enabled},
+    interrupts::{Disabled, Enabled, Interrupt},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
@@ -30,13 +30,15 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     c: PhantomData<C>,
 }
 
-impl<T> Timer<T, Stopped, W32, Disabled, TimerMode<P0>>
+type IDisabled = Interrupt<Disabled, Disabled, Disabled, Disabled>;
+
+impl<T> Timer<T, Stopped, W32, IDisabled, TimerMode<P0>>
 where
     T: Instance,
 {
     /// Conversion function to turn a PAC-level timer interface into a
     /// HAL-level timer running in timer mode.
-    pub fn timer(timer: T) -> Timer<T, Stopped, W32, Disabled, TimerMode<P0>> {
+    pub fn timer(timer: T) -> Self {
         // Make sure the timer is stopped
         timer
             .as_timer0()
@@ -59,7 +61,7 @@ where
             .prescaler
             .write(|w| unsafe { w.bits(P0::VAL) });
 
-        Timer {
+        Self {
             timer,
             s: PhantomData,
             w: PhantomData,
@@ -69,13 +71,13 @@ where
     }
 }
 
-impl<T> Timer<T, Stopped, W32, Disabled, CounterMode>
+impl<T> Timer<T, Stopped, W32, IDisabled, CounterMode>
 where
     T: Instance,
 {
     /// Constructor to turn a PAC-level timer peripheral into a HAL-level timer
     /// running in counter mode.
-    pub fn counter(timer: T) -> Timer<T, Stopped, W32, Disabled, CounterMode> {
+    pub fn counter(timer: T) -> Self {
         // Make sure the timer is stopped
         timer
             .as_timer0()
@@ -92,7 +94,7 @@ where
         // Set counter mode
         timer.as_timer0().mode.write(|w| w.mode().counter());
 
-        Timer {
+        Self {
             timer,
             s: PhantomData,
             w: PhantomData,
@@ -101,6 +103,7 @@ where
         }
     }
 }
+
 impl<T, W, I, C> Timer<T, Stopped, W, I, C>
 where
     T: Instance,
@@ -198,34 +201,93 @@ where
     }
 }
 
-impl<T, S, W, C> Timer<T, S, W, Enabled, C>
-where
-    T: Instance,
-    W: Width,
-{
-    /// Disable interrupt 0 for timer.
-    pub fn disable_interrupt(self) -> Timer<T, S, W, Disabled, C> {
-        self.timer
-            .as_timer0()
-            .intenclr
-            .write(|w| w.compare0().set_bit());
-        Timer {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
-    }
+macro_rules! define_disabled_type_0 {
+    () => {
+        Interrupt<Disabled, IA, IB, IC>
+    };
 }
 
-impl<T, S, W, C> Timer<T, S, W, Disabled, C>
+macro_rules! define_disabled_type_1 {
+    () => {
+        Interrupt<IA, Disabled, IB, IC>
+    };
+}
+
+macro_rules! define_disabled_type_2 {
+    () => {
+        Interrupt<IA, IB, Disabled, IC>
+    };
+}
+
+macro_rules! define_disabled_type_3 {
+    () => {
+        Interrupt<IA, IB, IC, Disabled>
+    };
+}
+
+macro_rules! define_enabled_type_0 {
+    () => {
+        Interrupt<Enabled, IA, IB, IC>
+    };
+}
+
+macro_rules! define_enabled_type_1 {
+    () => {
+        Interrupt<IA, Enabled, IB, IC>
+    };
+}
+
+macro_rules! define_enabled_type_2 {
+    () => {
+        Interrupt<IA, IB, Enabled, IC>
+    };
+}
+
+macro_rules! define_enabled_type_3 {
+    () => {
+        Interrupt<IA, IB, IC, Enabled>
+    };
+}
+
+macro_rules! define_disable_interrupt {
+    ( $num:literal ) => {
+        paste::paste! {
+            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, [< define_disabled_type_ $num >]!(), C>
+            where
+                T: Instance,
+                W: Width,
+            {
+                #[doc = "Disable interrupt " [< $num >] " for this timer."]
+                pub fn [< disable_interrupt_ $num >](self) -> Timer<T, S, W, [< define_enabled_type_ $num >]!(), C> {
+                    self.timer
+                        .as_timer0()
+                        .intenclr
+                        .write(|w| w.[< compare $num >]().set_bit());
+                    Timer {
+                        timer: self.timer,
+                        s: PhantomData,
+                        w: PhantomData,
+                        i: PhantomData,
+                        c: PhantomData,
+                    }
+                }
+            }
+        }
+    };
+}
+
+define_disable_interrupt!(0);
+define_disable_interrupt!(1);
+define_disable_interrupt!(2);
+define_disable_interrupt!(3);
+
+impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, define_disabled_type_0!(), C>
 where
     T: Instance,
     W: Width,
 {
     /// Enable interrupt 0 for timer.
-    pub fn enable_interrupt(self) -> Timer<T, S, W, Enabled, C> {
+    pub fn enable_interrupt(self) -> Timer<T, S, W, define_enabled_type_0!(), C> {
         self.timer
             .as_timer0()
             .intenset
