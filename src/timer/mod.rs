@@ -1,6 +1,8 @@
-//! A basic hal-level interface to a timer's timer mode.
+//! A basic hal-level interface to the timer peripheral.
 //!
 //! Note that this module kind of by-passes [`nrf52480_hal`'s `timer` module](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/timer/index.html)
+//!
+//! See [Nordic's docs](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29) for a general overview of the underlying hardware.
 
 pub mod bitmode;
 pub mod interrupts;
@@ -32,7 +34,8 @@ impl<T> Timer<T, Stopped, W32, Disabled, TimerMode<P0>>
 where
     T: Instance,
 {
-    /// Conversion function to turn a PAC-level timer interface into a HAL-level one.
+    /// Conversion function to turn a PAC-level timer interface into a
+    /// HAL-level timer running in timer mode.
     pub fn timer(timer: T) -> Timer<T, Stopped, W32, Disabled, TimerMode<P0>> {
         // Make sure the timer is stopped
         timer
@@ -70,6 +73,8 @@ impl<T> Timer<T, Stopped, W32, Disabled, CounterMode>
 where
     T: Instance,
 {
+    /// Constructor to turn a PAC-level timer peripheral into a HAL-level timer
+    /// running in counter mode.
     pub fn counter(timer: T) -> Timer<T, Stopped, W32, Disabled, CounterMode> {
         // Make sure the timer is stopped
         timer
@@ -181,6 +186,10 @@ where
     T: Instance,
     W: Width,
 {
+    /// Increase this counter's value by one.
+    ///
+    /// Note that increasing the counter's value may cause it to overflow, in
+    /// which case the counter starts counting from zero again.
     pub fn tick(&mut self) {
         self.timer
             .as_timer0()
@@ -243,7 +252,7 @@ where
 
     /// Set compare value 0 for timer.
     ///
-    /// See Nordic's documentation on `CC[0]` register for details.
+    /// See [Nordic's documentation on `CC[0]`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_13#register.CC-0-5) register for details.
     pub fn compare_against(&mut self, val: u32) {
         self.timer.as_timer0().cc[0].write(|w| unsafe { w.cc().bits(val) });
     }
@@ -251,7 +260,7 @@ where
     /// Clear/Reset the timer.
     ///
     /// This works both in `Started` as well as in `Stopped` state.
-    /// See Nordic's documentation on `TASKS_CLEAR` for details.
+    /// See [Nordic's documentation on `TASKS_CLEAR`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_3#register.TASKS_CLEAR) for details.
     pub fn reset(&mut self) {
         self.timer
             .as_timer0()
