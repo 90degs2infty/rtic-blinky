@@ -19,3 +19,15 @@ pub struct IS4<I0, I1, I2, I3> {
     i2: PhantomData<I2>,
     i3: PhantomData<I3>,
 }
+
+/// Type modelling the en-/disabled state of six interrupts.
+///
+/// IS is short for Interrupt State.
+pub struct IS6<I0, I1, I2, I3, I4, I5> {
+    i0: PhantomData<I0>,
+    i1: PhantomData<I1>,
+    i2: PhantomData<I2>,
+    i3: PhantomData<I3>,
+    i4: PhantomData<I4>,
+    i5: PhantomData<I5>,
+}
