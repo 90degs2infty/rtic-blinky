@@ -15,7 +15,7 @@ use nrf52840_hal::timer::Instance;
 
 use crate::timer::{
     bitmode::{Width, W32},
-    interrupts::{Disabled, Enabled, Interrupt},
+    interrupts::{Disabled, Enabled, IS4},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
@@ -30,7 +30,7 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     c: PhantomData<C>,
 }
 
-type IDisabled = Interrupt<Disabled, Disabled, Disabled, Disabled>;
+type IDisabled = IS4<Disabled, Disabled, Disabled, Disabled>;
 
 impl<T> Timer<T, Stopped, W32, IDisabled, TimerMode<P0>>
 where
@@ -203,49 +203,49 @@ where
 
 macro_rules! define_disabled_type_0 {
     () => {
-        Interrupt<Disabled, IA, IB, IC>
+        IS4<Disabled, IA, IB, IC>
     };
 }
 
 macro_rules! define_disabled_type_1 {
     () => {
-        Interrupt<IA, Disabled, IB, IC>
+        IS4<IA, Disabled, IB, IC>
     };
 }
 
 macro_rules! define_disabled_type_2 {
     () => {
-        Interrupt<IA, IB, Disabled, IC>
+        IS4<IA, IB, Disabled, IC>
     };
 }
 
 macro_rules! define_disabled_type_3 {
     () => {
-        Interrupt<IA, IB, IC, Disabled>
+        IS4<IA, IB, IC, Disabled>
     };
 }
 
 macro_rules! define_enabled_type_0 {
     () => {
-        Interrupt<Enabled, IA, IB, IC>
+        IS4<Enabled, IA, IB, IC>
     };
 }
 
 macro_rules! define_enabled_type_1 {
     () => {
-        Interrupt<IA, Enabled, IB, IC>
+        IS4<IA, Enabled, IB, IC>
     };
 }
 
 macro_rules! define_enabled_type_2 {
     () => {
-        Interrupt<IA, IB, Enabled, IC>
+        IS4<IA, IB, Enabled, IC>
     };
 }
 
 macro_rules! define_enabled_type_3 {
     () => {
-        Interrupt<IA, IB, IC, Enabled>
+        IS4<IA, IB, IC, Enabled>
     };
 }
 

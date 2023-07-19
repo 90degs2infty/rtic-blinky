@@ -10,7 +10,10 @@ pub struct Enabled;
 /// Type indicating a timer not triggering interrupts.
 pub struct Disabled;
 
-pub struct Interrupt<I0, I1, I2, I3> {
+/// Type modelling the en-/disabled state of four interrupts.
+///
+/// IS is short for Interrupt State.
+pub struct IS4<I0, I1, I2, I3> {
     i0: PhantomData<I0>,
     i1: PhantomData<I1>,
     i2: PhantomData<I2>,

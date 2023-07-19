@@ -18,7 +18,7 @@ mod app {
 
     use rtic_blinky::timer::{
         bitmode::{W08, W24},
-        interrupts::{Disabled, Enabled, Interrupt},
+        interrupts::{Disabled, Enabled, IS4},
         mode::{Counter as CounterMode, Timer as TimerMode},
         prescaler::P0,
         state::Started,
@@ -27,7 +27,7 @@ mod app {
 
     use core::fmt::Debug;
 
-    type IEn0 = Interrupt<Enabled, Disabled, Disabled, Disabled>;
+    type IEn0 = IS4<Enabled, Disabled, Disabled, Disabled>;
 
     // Shared resources go here
     #[shared]
