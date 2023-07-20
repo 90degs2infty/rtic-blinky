@@ -15,7 +15,7 @@ use nrf52840_hal::timer::Instance;
 
 use crate::timer::{
     bitmode::{Width, W32},
-    interrupts::{Disabled, Enabled, IS4},
+    interrupts::{DefaultState, Disabled, Enabled, InterruptSource, IS4},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
@@ -30,11 +30,17 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     c: PhantomData<C>,
 }
 
+// Okay, so go ahead and:
+// - IDisabled4 and IDisabled6
+// - Introduce constructor macro for 4-CC variant and for 6-CC variant
+// - Separate the 4-CC and the 6-CC variant for enabling and disabling interrupts, to this end, you may have to restructure the macro code to make it more accessible
+
 type IDisabled = IS4<Disabled, Disabled, Disabled, Disabled>;
 
-impl<T> Timer<T, Stopped, W32, IDisabled, TimerMode<P0>>
+impl<T> Timer<T, Stopped, W32, <InterruptSource<T> as DefaultState>::Disabled, TimerMode<P0>>
 where
     T: Instance,
+    InterruptSource<T>: DefaultState,
 {
     /// Conversion function to turn a PAC-level timer interface into a
     /// HAL-level timer running in timer mode.
@@ -51,6 +57,7 @@ where
         // Disable and clear interrupts
         timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
         timer.as_timer0().events_compare[0].write(|w| w);
+        // As I expose different interrupts later on, I will have to disable _all_ interrupts at this point
 
         // Set timer mode
         timer.as_timer0().mode.write(|w| w.mode().timer());
@@ -280,6 +287,7 @@ define_disable_interrupt!(0);
 define_disable_interrupt!(1);
 define_disable_interrupt!(2);
 define_disable_interrupt!(3);
+// Timer 3 and 4 have additional CC registers 4 and 5!
 
 impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, define_disabled_type_0!(), C>
 where

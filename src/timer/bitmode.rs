@@ -11,7 +11,7 @@ mod private {
 /// Common interface to all bitmodes.
 ///
 /// This trait is sealed and not meant to be implemented outside this crate.
-pub trait Width {
+pub trait Width: private::Sealed {
     fn set(w: &mut Writer) -> &mut Writer;
 }
 
@@ -21,6 +21,8 @@ macro_rules! define_width {
             #[doc = "Type encoding a bit with of " [<$w>] " bits."]
             #[doc = "See [Nordic's docs on the `BITMODE` register](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_11#register.BITMODE) for details."]
             pub struct [< W $w >] {}
+
+            impl private::Sealed for [< W $w >] {}
 
             impl Width for [< W $w >] {
                 fn set(w: &mut Writer) -> &mut Writer {
