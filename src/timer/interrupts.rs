@@ -50,37 +50,83 @@ where
     source: PhantomData<T>,
 }
 
-pub trait DefaultState: private::Sealed {
+pub trait ClearState: private::Sealed {
+    type Raw;
     type Disabled;
+    fn unpend_interrupts(timer: &Self::Raw);
+    fn disable_interrupts(timer: &Self::Raw);
+
+    fn reset_interrupts(timer: &Self::Raw) {
+        Self::disable_interrupts(timer);
+        Self::unpend_interrupts(timer);
+    }
 }
 
-macro_rules! define_interrupt_state_4 {
-    ( $num:literal ) => {
+macro_rules! disable_interrupts {
+    ( $timer:ident, $( $i:literal ),+ ) => {
         paste::paste! {
-            impl private::Sealed for InterruptSource< [< TIMER $num >] > {}
+            $timer.intenclr.write(|w| {
+                w
+                $(
+                    .[< compare $i >]()
+                    .set_bit()
+                )+
+            });
+        }
+    }
+}
 
-            impl DefaultState for InterruptSource< [< TIMER $num >] > {
-                type Disabled = IS4<Disabled, Disabled, Disabled, Disabled>;
+macro_rules! unpend_interrupts {
+    ( $timer:ident, $( $i:literal ),+ ) => {
+        paste::paste! {
+            $(
+                $timer.events_compare[$i].write(|w| w);
+            )+
+        }
+    };
+}
+
+macro_rules! define_basic_clearstate {
+    ( $t:ty ) => {
+        impl private::Sealed for InterruptSource<$t> {}
+
+        impl ClearState for InterruptSource<$t> {
+            type Raw = $t;
+            type Disabled = IS4<Disabled, Disabled, Disabled, Disabled>;
+
+            fn unpend_interrupts(timer: &Self::Raw) {
+                unpend_interrupts!(timer, 0, 1, 2, 3);
+            }
+
+            fn disable_interrupts(timer: &Self::Raw) {
+                disable_interrupts!(timer, 0, 1, 2, 3);
             }
         }
     };
 }
 
-define_interrupt_state_4!(0);
-define_interrupt_state_4!(1);
-define_interrupt_state_4!(2);
+define_basic_clearstate!(TIMER0);
+define_basic_clearstate!(TIMER1);
+define_basic_clearstate!(TIMER2);
 
-macro_rules! define_interrupt_state_6 {
-    ( $num:literal ) => {
-        paste::paste! {
-            impl private::Sealed for InterruptSource< [< TIMER $num >] > {}
+macro_rules! define_extended_clearstate {
+    ( $t:ty ) => {
+        impl private::Sealed for InterruptSource<$t> {}
 
-            impl DefaultState for InterruptSource< [< TIMER $num >] > {
-                type Disabled = IS6<Disabled, Disabled, Disabled, Disabled, Disabled, Disabled>;
+        impl ClearState for InterruptSource<$t> {
+            type Raw = $t;
+            type Disabled = IS6<Disabled, Disabled, Disabled, Disabled, Disabled, Disabled>;
+
+            fn unpend_interrupts(timer: &Self::Raw) {
+                unpend_interrupts!(timer, 0, 1, 2, 3, 4, 5);
+            }
+
+            fn disable_interrupts(timer: &Self::Raw) {
+                disable_interrupts!(timer, 0, 1, 2, 3, 4, 5);
             }
         }
     };
 }
 
-define_interrupt_state_6!(3);
-define_interrupt_state_6!(4);
+define_extended_clearstate!(TIMER3);
+define_extended_clearstate!(TIMER4);

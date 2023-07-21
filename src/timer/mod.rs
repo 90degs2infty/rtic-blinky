@@ -15,7 +15,7 @@ use nrf52840_hal::timer::Instance;
 
 use crate::timer::{
     bitmode::{Width, W32},
-    interrupts::{DefaultState, Disabled, Enabled, InterruptSource, IS4},
+    interrupts::{ClearState, Disabled, Enabled, InterruptSource, IS4},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
@@ -35,38 +35,74 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
 // - Introduce constructor macro for 4-CC variant and for 6-CC variant
 // - Separate the 4-CC and the 6-CC variant for enabling and disabling interrupts, to this end, you may have to restructure the macro code to make it more accessible
 
-type IDisabled = IS4<Disabled, Disabled, Disabled, Disabled>;
-
-impl<T> Timer<T, Stopped, W32, <InterruptSource<T> as DefaultState>::Disabled, TimerMode<P0>>
+#[inline]
+fn stop_timer<T>(timer: &T)
 where
     T: Instance,
-    InterruptSource<T>: DefaultState,
+{
+    timer
+        .as_timer0()
+        .tasks_stop
+        .write(|w| w.tasks_stop().set_bit());
+}
+
+#[inline]
+fn ensure_width_32<T>(timer: &T)
+where
+    T: Instance,
+{
+    timer.as_timer0().bitmode.write(|w| W32::set(w));
+}
+
+#[inline]
+fn set_timer_mode<T>(timer: &T)
+where
+    T: Instance,
+{
+    timer.as_timer0().mode.write(|w| w.mode().timer());
+}
+
+#[inline]
+fn set_counter_mode<T>(timer: &T)
+where
+    T: Instance,
+{
+    timer.as_timer0().mode.write(|w| w.mode().counter());
+}
+
+#[inline]
+fn ensure_prescale_0<T>(timer: &T)
+where
+    T: Instance,
+{
+    timer
+        .as_timer0()
+        .prescaler
+        .write(|w| unsafe { w.bits(P0::VAL) });
+}
+
+impl<T> Timer<T, Stopped, W32, <InterruptSource<T> as ClearState>::Disabled, TimerMode<P0>>
+where
+    T: Instance,
+    InterruptSource<T>: ClearState<Raw = T>,
 {
     /// Conversion function to turn a PAC-level timer interface into a
     /// HAL-level timer running in timer mode.
     pub fn timer(timer: T) -> Self {
         // Make sure the timer is stopped
-        timer
-            .as_timer0()
-            .tasks_stop
-            .write(|w| w.tasks_stop().set_bit());
+        stop_timer(&timer);
 
         // Set bit width
-        timer.as_timer0().bitmode.write(|w| W32::set(w));
+        ensure_width_32(&timer);
 
-        // Disable and clear interrupts
-        timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
-        timer.as_timer0().events_compare[0].write(|w| w);
-        // As I expose different interrupts later on, I will have to disable _all_ interrupts at this point
+        // Disable and clear all interrupts
+        <InterruptSource<T> as ClearState>::reset_interrupts(&timer);
 
         // Set timer mode
-        timer.as_timer0().mode.write(|w| w.mode().timer());
+        set_timer_mode(&timer);
 
         // Set prescale value
-        timer
-            .as_timer0()
-            .prescaler
-            .write(|w| unsafe { w.bits(P0::VAL) });
+        ensure_prescale_0(&timer);
 
         Self {
             timer,
@@ -78,28 +114,25 @@ where
     }
 }
 
-impl<T> Timer<T, Stopped, W32, IDisabled, CounterMode>
+impl<T> Timer<T, Stopped, W32, <InterruptSource<T> as ClearState>::Disabled, CounterMode>
 where
     T: Instance,
+    InterruptSource<T>: ClearState<Raw = T>,
 {
     /// Constructor to turn a PAC-level timer peripheral into a HAL-level timer
     /// running in counter mode.
     pub fn counter(timer: T) -> Self {
         // Make sure the timer is stopped
-        timer
-            .as_timer0()
-            .tasks_stop
-            .write(|w| w.tasks_stop().set_bit());
+        stop_timer(&timer);
 
         // Set bit width
-        timer.as_timer0().bitmode.write(|w| W32::set(w));
+        ensure_width_32(&timer);
 
         // Disable and clear interrupts
-        timer.as_timer0().intenclr.write(|w| w.compare0().set_bit());
-        timer.as_timer0().events_compare[0].write(|w| w);
+        <InterruptSource<T> as ClearState>::reset_interrupts(&timer);
 
         // Set counter mode
-        timer.as_timer0().mode.write(|w| w.mode().counter());
+        set_counter_mode(&timer);
 
         Self {
             timer,
