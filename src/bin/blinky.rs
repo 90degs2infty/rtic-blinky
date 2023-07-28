@@ -63,11 +63,11 @@ mod app {
         let mut counter = Timer::counter(p.TIMER2).set_counterwidth::<W08>();
 
         // Interrupts
-        timer.compare_against(0);
-        let timer = timer.enable_interrupt();
+        timer.compare_against_0(0);
+        let timer = timer.enable_interrupt_0();
 
-        counter.compare_against(4);
-        let counter = counter.enable_interrupt();
+        counter.compare_against_0(4);
+        let counter = counter.enable_interrupt_0();
 
         unsafe {
             NVIC::unmask(TIMER1::INTERRUPT);
@@ -111,7 +111,7 @@ mod app {
         defmt::info!("toggle");
 
         let timer = ctx.local.timer;
-        timer.unpend_interrupt();
+        timer.unpend_interrupt_0();
 
         let ls = ctx.shared.led_switch;
         let leds = ctx.shared.leds;
@@ -140,7 +140,7 @@ mod app {
 
         (counter, ls, leds).lock(|counter, ls, leds| {
             // Reset counter
-            counter.unpend_interrupt();
+            counter.unpend_interrupt_0();
             counter.reset();
 
             // Turn off all leds to start from a known state again
