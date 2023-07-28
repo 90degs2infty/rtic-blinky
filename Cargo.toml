@@ -11,6 +11,7 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 paste = "1.0.13"
 rtic = { version = "2.0.0", features = ["thumbv7-backend"] }
 nrf52840-hal = { version = "0.16.0" }
+nrf-proc-macros = { path = "nrf-proc-macros" }
 # TODO add a monotonic if you use scheduling
 # rtic-monotonics = { version = "1.0.0", features = [ "cortex-m-systick" ]}
 

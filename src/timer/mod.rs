@@ -10,12 +10,16 @@ pub mod mode;
 pub mod prescaler;
 pub mod state;
 
-use core::marker::PhantomData;
-use nrf52840_hal::timer::Instance;
+use core::{marker::PhantomData, ops::Deref};
+use nrf52840_hal::{
+    pac::{timer0::RegisterBlock as BasicRegBlock, timer3::RegisterBlock as ExtendedRegBlock},
+    timer::Instance,
+};
+use nrf_proc_macros::enclose;
 
 use crate::timer::{
     bitmode::{Width, W32},
-    interrupts::{ClearState, Disabled, Enabled, InterruptSource, IS4},
+    interrupts::{ClearState, Disabled, Enabled, InterruptSource, IS4, IS6},
     mode::{Counter as CounterMode, Timer as TimerMode},
     prescaler::{Prescaler, P0},
     state::{Started, Stopped},
@@ -241,125 +245,123 @@ where
     }
 }
 
-macro_rules! define_disabled_type_0 {
-    () => {
-        IS4<Disabled, IA, IB, IC>
-    };
-}
-
-macro_rules! define_disabled_type_1 {
-    () => {
-        IS4<IA, Disabled, IB, IC>
-    };
-}
-
-macro_rules! define_disabled_type_2 {
-    () => {
-        IS4<IA, IB, Disabled, IC>
-    };
-}
-
-macro_rules! define_disabled_type_3 {
-    () => {
-        IS4<IA, IB, IC, Disabled>
-    };
-}
-
-macro_rules! define_enabled_type_0 {
-    () => {
-        IS4<Enabled, IA, IB, IC>
-    };
-}
-
-macro_rules! define_enabled_type_1 {
-    () => {
-        IS4<IA, Enabled, IB, IC>
-    };
-}
-
-macro_rules! define_enabled_type_2 {
-    () => {
-        IS4<IA, IB, Enabled, IC>
-    };
-}
-
-macro_rules! define_enabled_type_3 {
-    () => {
-        IS4<IA, IB, IC, Enabled>
-    };
-}
-
-macro_rules! define_disable_interrupt {
-    ( $num:literal ) => {
-        paste::paste! {
-            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, [< define_disabled_type_ $num >]!(), C>
-            where
-                T: Instance,
-                W: Width,
-            {
-                #[doc = "Disable interrupt " [< $num >] " for this timer."]
-                pub fn [< disable_interrupt_ $num >](self) -> Timer<T, S, W, [< define_enabled_type_ $num >]!(), C> {
-                    self.timer
-                        .as_timer0()
-                        .intenclr
-                        .write(|w| w.[< compare $num >]().set_bit());
-                    Timer {
-                        timer: self.timer,
-                        s: PhantomData,
-                        w: PhantomData,
-                        i: PhantomData,
-                        c: PhantomData,
-                    }
-                }
-            }
-        }
-    };
-}
-
-define_disable_interrupt!(0);
-define_disable_interrupt!(1);
-define_disable_interrupt!(2);
-define_disable_interrupt!(3);
-// Timer 3 and 4 have additional CC registers 4 and 5!
-
-impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, define_disabled_type_0!(), C>
-where
-    T: Instance,
-    W: Width,
-{
-    /// Enable interrupt 0 for timer.
-    pub fn enable_interrupt(self) -> Timer<T, S, W, define_enabled_type_0!(), C> {
-        self.timer
-            .as_timer0()
-            .intenset
-            .write(|w| w.compare0().set_bit());
+macro_rules! timer {
+    ( $timer:expr ) => {
         Timer {
-            timer: self.timer,
-            s: PhantomData,
+            timer: $timer,
             w: PhantomData,
+            s: PhantomData,
             i: PhantomData,
             c: PhantomData,
         }
+    };
+}
+
+macro_rules! disable_interrupt {
+    ( $timer:expr, $num:literal ) => {
+        paste::paste! {
+            $timer.intenclr.write(|w| w.[< compare $num >]().set_bit());
+        }
+    };
+}
+
+macro_rules! enable_interrupt {
+    ( $timer:expr, $num:literal ) => {
+        paste::paste! {
+            $timer.intenset.write(|w| w.[< compare $num >]().set_bit());
+        }
+    };
+}
+
+macro_rules! unpend_interrupt {
+    ( $timer:expr, $num:literal ) => {
+        paste::paste! {
+            $timer.events_compare[$num].write(|w| w.events_compare().clear_bit());
+        }
+    };
+}
+
+macro_rules! write_compare_value {
+    ( $timer:expr, $num:literal, $val:ident) => {
+        paste::paste! {
+            $timer.cc[$num].write(|w| unsafe { w.cc().bits($val) });
+        }
+    };
+}
+
+macro_rules! define_basic_cc {
+    ( $num:literal ) => {
+        paste::paste! {
+
+            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, enclose!(Enabled at $num by IA, IB, IC wrapped_in IS4), C>
+            where
+                T: Instance,
+                W: Width,
+                T: Deref<Target = BasicRegBlock>,
+            {
+                #[doc = "Disable interrupt " $num "."]
+                #[doc = ""]
+                #[doc = "For details, see Nordic's documentation on the [`INTENCLR`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_9#register.INTENCLR) register."]
+                pub fn [< disable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Disabled at $num by IA, IB, IC wrapped_in IS4), C> {
+                    disable_interrupt!(self.timer, $num);
+                    timer!(self.timer)
+                }
+            }
+
+            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, enclose!(Disabled at $num by IA, IB, IC wrapped_in IS4), C>
+            where
+                T: Instance,
+                W: Width,
+                T: Deref<Target = BasicRegBlock>,
+            {
+                #[doc = "Disable interrupt " $num "."]
+                #[doc = ""]
+                #[doc = "For details, see Nordic's documentation on the [`INTENSET`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_8#register.INTENSET) register."]
+                pub fn [< enable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Enabled at $num by IA, IB, IC wrapped_in IS4), C> {
+                    enable_interrupt!(self.timer, $num);
+                    timer!(self.timer)
+                }
+            }
+
+            impl<T, S, W, I, C> Timer<T, S, W, I, C>
+            where
+                T: Instance,
+                W: Width,
+                T: Deref<Target = BasicRegBlock>,
+            {
+                #[doc = "Unpend interrupt " $num "."]
+                #[doc = ""]
+                #[doc = "For details, see Nordic's documentation on the [`EVENTS_COMPARE`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_6#register.EVENTS_COMPARE-0-5) register."]
+                pub fn [< unpend_interrupt_ $num >](&mut self) {
+                    unpend_interrupt!(self.timer, $num);
+                }
+
+                #[doc = "Set compare value " $num "."]
+                #[doc = ""]
+                #[doc = "For details, see Nordic's documentation on the [`CC`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_13#register.CC-0-5) register."]
+                #[doc = ""]
+                #[doc = "A note on safety: it is safe to set any `u32` compare value."]
+                #[doc = "Depending on the timer's set bit width, not all bits will be used for comparison by the peripheral, though."]
+                pub fn [< compare_against_ $num >](&mut self, val: u32) {
+                    write_compare_value!(self.timer, $num, val);
+                }
+            }
+
+        // todo: task_capture
+        }
     }
 }
+
+define_basic_cc!(0);
+define_basic_cc!(1);
+define_basic_cc!(2);
+define_basic_cc!(3);
 
 impl<T, S, W, I, C> Timer<T, S, W, I, C>
 where
     T: Instance,
     W: Width,
 {
-    /// Unpend interrupt 0 for timer.
-    pub fn unpend_interrupt(&mut self) {
-        self.timer.as_timer0().events_compare[0].write(|w| w.events_compare().clear_bit());
-    }
-
-    /// Set compare value 0 for timer.
-    ///
-    /// See [Nordic's documentation on `CC[0]`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_13#register.CC-0-5) register for details.
-    pub fn compare_against(&mut self, val: u32) {
-        self.timer.as_timer0().cc[0].write(|w| unsafe { w.cc().bits(val) });
-    }
-
     /// Clear/Reset the timer.
     ///
     /// This works both in `Started` as well as in `Stopped` state.
