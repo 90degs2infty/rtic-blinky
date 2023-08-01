@@ -5,6 +5,7 @@
 //! See [Nordic's docs](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29) for a general overview of the underlying hardware.
 
 pub mod bitmode;
+pub mod distinction;
 pub mod interrupts;
 pub mod mode;
 pub mod prescaler;
@@ -32,6 +33,18 @@ pub struct Timer<T: Instance, S, W: Width, I, C> {
     s: PhantomData<S>,
     i: PhantomData<I>,
     c: PhantomData<C>,
+}
+
+macro_rules! timer {
+    ( $timer:expr ) => {
+        Timer {
+            timer: $timer,
+            w: PhantomData,
+            s: PhantomData,
+            i: PhantomData,
+            c: PhantomData,
+        }
+    };
 }
 
 // Okay, so go ahead and:
@@ -108,13 +121,7 @@ where
         // Set prescale value
         ensure_prescale_0(&timer);
 
-        Self {
-            timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(timer)
     }
 }
 
@@ -138,13 +145,7 @@ where
         // Set counter mode
         set_counter_mode(&timer);
 
-        Self {
-            timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(timer)
     }
 }
 
@@ -158,13 +159,7 @@ where
     /// See `Width` for details.
     pub fn set_counterwidth<W2: Width>(self) -> Timer<T, Stopped, W2, I, C> {
         self.timer.as_timer0().bitmode.write(|w| W2::set(w));
-        Timer {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(self.timer)
     }
 
     /// Start a timer.
@@ -173,13 +168,7 @@ where
             .as_timer0()
             .tasks_start
             .write(|w| w.tasks_start().set_bit());
-        Timer {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(self.timer)
     }
 }
 
@@ -197,13 +186,7 @@ where
             .as_timer0()
             .prescaler
             .write(|w| unsafe { w.bits(P2::VAL) });
-        Timer {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(self.timer)
     }
 }
 
@@ -218,13 +201,7 @@ where
             .as_timer0()
             .tasks_stop
             .write(|w| w.tasks_stop().set_bit());
-        Timer {
-            timer: self.timer,
-            s: PhantomData,
-            w: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
+        timer!(self.timer)
     }
 }
 
@@ -243,18 +220,6 @@ where
             .tasks_count
             .write(|w| w.tasks_count().set_bit());
     }
-}
-
-macro_rules! timer {
-    ( $timer:expr ) => {
-        Timer {
-            timer: $timer,
-            w: PhantomData,
-            s: PhantomData,
-            i: PhantomData,
-            c: PhantomData,
-        }
-    };
 }
 
 macro_rules! disable_interrupt {
