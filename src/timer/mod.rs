@@ -52,7 +52,7 @@ macro_rules! timer {
 // - Introduce constructor macro for 4-CC variant and for 6-CC variant
 // - Separate the 4-CC and the 6-CC variant for enabling and disabling interrupts, to this end, you may have to restructure the macro code to make it more accessible
 
-#[inline]
+#[inline(always)]
 fn stop_timer<T>(timer: &T)
 where
     T: Instance,
@@ -63,7 +63,7 @@ where
         .write(|w| w.tasks_stop().set_bit());
 }
 
-#[inline]
+#[inline(always)]
 fn ensure_width_32<T>(timer: &T)
 where
     T: Instance,
@@ -71,7 +71,7 @@ where
     timer.as_timer0().bitmode.write(|w| W32::set(w));
 }
 
-#[inline]
+#[inline(always)]
 fn set_timer_mode<T>(timer: &T)
 where
     T: Instance,
@@ -79,7 +79,7 @@ where
     timer.as_timer0().mode.write(|w| w.mode().timer());
 }
 
-#[inline]
+#[inline(always)]
 fn set_counter_mode<T>(timer: &T)
 where
     T: Instance,
@@ -87,7 +87,7 @@ where
     timer.as_timer0().mode.write(|w| w.mode().counter());
 }
 
-#[inline]
+#[inline(always)]
 fn ensure_prescale_0<T>(timer: &T)
 where
     T: Instance,
