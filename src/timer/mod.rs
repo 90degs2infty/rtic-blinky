@@ -254,6 +254,12 @@ macro_rules! write_compare_value {
     };
 }
 
+macro_rules! capture_value {
+    ( $timer:expr, $num:literal ) => {
+        $timer.tasks_capture[$num].write(|w| w.tasks_capture().set_bit());
+    };
+}
+
 macro_rules! define_cc {
     ( $reg:ty, $istate:ty, $num:literal, $( $ilane:ty ),* | $ilane_prime:ty ) => {
         paste::paste! {
@@ -326,9 +332,14 @@ macro_rules! define_cc {
                 pub fn [< compare_against_ $num >](&mut self, val: u32) {
                     write_compare_value!(self.timer, $num, val);
                 }
-            }
 
-        // todo: task_capture
+                #[doc = "Capture current timer value to CC register " $num "."]
+                #[doc = ""]
+                #[doc = "For details, see Nordic's documentation on the [`TASKS_CAPTURE`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_5#register.TASKS_CAPTURE-0-5) register."]
+                pub fn [< capture_ $num >](&mut self) {
+                    capture_value!(self.timer, $num);
+                }
+            }
         }
     }
 }
