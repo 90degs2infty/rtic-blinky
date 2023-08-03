@@ -254,45 +254,61 @@ macro_rules! write_compare_value {
     };
 }
 
-macro_rules! define_basic_cc {
-    ( $num:literal ) => {
+macro_rules! define_cc {
+    ( $reg:ty, $istate:ty, $num:literal, $( $ilane:ty ),* | $ilane_prime:ty ) => {
         paste::paste! {
 
-            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, enclose!(Enabled at $num by IA, IB, IC wrapped_in IS4), C>
+            impl<T, S, W, $( $ilane ),* , C> Timer<T, S, W, enclose!(Enabled at $num by $( $ilane ),* wrapped_in $istate), C>
             where
                 T: Instance,
+                T: Deref<Target = $reg>,
                 W: Width,
-                T: Deref<Target = BasicRegBlock>,
             {
                 #[doc = "Disable interrupt " $num "."]
                 #[doc = ""]
                 #[doc = "For details, see Nordic's documentation on the [`INTENCLR`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_9#register.INTENCLR) register."]
-                pub fn [< disable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Disabled at $num by IA, IB, IC wrapped_in IS4), C> {
+                pub fn [< disable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Disabled at $num by $( $ilane ),* wrapped_in $istate), C> {
                     disable_interrupt!(self.timer, $num);
                     timer!(self.timer)
                 }
             }
 
-            impl<T, S, W, IA, IB, IC, C> Timer<T, S, W, enclose!(Disabled at $num by IA, IB, IC wrapped_in IS4), C>
+            impl<T, S, W, $( $ilane ),* , C> Timer<T, S, W, enclose!(Disabled at $num by $( $ilane ),* wrapped_in $istate), C>
             where
                 T: Instance,
+                T: Deref<Target = $reg>,
                 W: Width,
-                T: Deref<Target = BasicRegBlock>,
             {
-                #[doc = "Disable interrupt " $num "."]
+                #[doc = "Enable interrupt " $num "."]
                 #[doc = ""]
                 #[doc = "For details, see Nordic's documentation on the [`INTENSET`](https://infocenter.nordicsemi.com/topic/ps_nrf52840/timer.html?cp=5_0_0_5_29_4_8#register.INTENSET) register."]
-                pub fn [< enable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Enabled at $num by IA, IB, IC wrapped_in IS4), C> {
+                pub fn [< enable_interrupt_ $num >](self) -> Timer<T, S, W, enclose!(Enabled at $num by $( $ilane ),* wrapped_in $istate), C> {
                     enable_interrupt!(self.timer, $num);
                     timer!(self.timer)
                 }
             }
 
-            impl<T, S, W, I, C> Timer<T, S, W, I, C>
+            // Note that from the generics point of view, it would be sufficient
+            // to simply introduce the impl block via
+            // impl<T, S, W, I, C> Timer<T, S, W, I, C>
+            // i.e. do not specify the interrupt state type.
+            //
+            // But because we have basic and extended timers, with the above
+            // there is no way for the compiler to tell them apart (in the end,
+            // there could be a T implementing both
+            // T: Deref<Target = BasicRegBlock> AND
+            // T: Deref<Target = ExtendedRegBlock>)
+            // This makes the compiler not accept the code due to a duplicate
+            // definition of the methods unpend_interrupt_0 through ..._3.
+            //
+            // Specifying the interrupt state type "kind of verbosely" gives the
+            // compiler the opportunity to distinguish the unpend_interrupt_...
+            // methods for basic and extended timers.
+            impl<T, S, W, $( $ilane ),* , $ilane_prime, C> Timer<T, S, W, $istate<$( $ilane ),* , $ilane_prime>, C>
             where
                 T: Instance,
+                T: Deref<Target = $reg>,
                 W: Width,
-                T: Deref<Target = BasicRegBlock>,
             {
                 #[doc = "Unpend interrupt " $num "."]
                 #[doc = ""]
@@ -317,10 +333,29 @@ macro_rules! define_basic_cc {
     }
 }
 
+macro_rules! define_basic_cc {
+    ( $num:literal ) => {
+        define_cc!(BasicRegBlock, IS4, $num, IA, IB, IC | ID);
+    };
+}
+
+macro_rules! define_extended_cc {
+    ( $num:literal ) => {
+        define_cc!(ExtendedRegBlock, IS6, $num, IA, IB, IC, ID, IE | IF);
+    };
+}
+
 define_basic_cc!(0);
 define_basic_cc!(1);
 define_basic_cc!(2);
 define_basic_cc!(3);
+
+define_extended_cc!(0);
+define_extended_cc!(1);
+define_extended_cc!(2);
+define_extended_cc!(3);
+define_extended_cc!(4);
+define_extended_cc!(5);
 
 impl<T, S, W, I, C> Timer<T, S, W, I, C>
 where
