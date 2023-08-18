@@ -16,23 +16,23 @@ mod app {
         timer::Instance,
     };
 
-    use rtic_blinky::timer::{
-        bitmode::{W08, W24},
-        interrupts::{Disabled, Enabled, IS4},
+    use nrf52840_hal::rtime::{
+        bitmode::{W08, W24, W32},
+        interrupt::{BasicIRQState, Disabled, Enabled},
         mode::{Counter as CounterMode, Timer as TimerMode},
         prescaler::P0,
-        state::Started,
-        Timer,
+        state::{Started, Stopped},
+        timer::Timer,
     };
 
     use core::fmt::Debug;
 
-    type IEn0 = IS4<Enabled, Disabled, Disabled, Disabled>;
+    type IEn0 = BasicIRQState<Enabled, Disabled, Disabled, Disabled>;
 
     // Shared resources go here
     #[shared]
     struct Shared {
-        counter: Timer<TIMER2, Started, W08, IEn0, CounterMode>,
+        counter: Timer<TIMER2, W08, CounterMode, Started, IEn0>,
         leds: (P0_13<Output<PushPull>>, P0_14<Output<PushPull>>),
         led_switch: bool,
     }
@@ -40,7 +40,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        timer: Timer<TIMER1, Started, W24, IEn0, TimerMode<P0>>,
+        timer: Timer<TIMER1, W24, TimerMode<P0>, Started, IEn0>,
     }
 
     #[init]
@@ -55,12 +55,25 @@ mod app {
         let led_2 = p0.p0_14.into_push_pull_output(Level::High);
 
         // Timer
-        let mut timer = Timer::timer(p.TIMER1)
-            .set_prescale::<P0>()
-            .set_counterwidth::<W24>();
+        let mut timer = Timer::<
+            TIMER1,
+            W32,
+            TimerMode<P0>,
+            Stopped,
+            BasicIRQState<Disabled, Disabled, Disabled, Disabled>,
+        >::timer(p.TIMER1)
+        .set_prescale::<P0>()
+        .set_counterwidth::<W24>();
 
         // Counter
-        let mut counter = Timer::counter(p.TIMER2).set_counterwidth::<W08>();
+        let mut counter = Timer::<
+            TIMER2,
+            W32,
+            CounterMode,
+            Stopped,
+            BasicIRQState<Disabled, Disabled, Disabled, Disabled>,
+        >::counter(p.TIMER2)
+        .set_counterwidth::<W08>();
 
         // Interrupts
         timer.compare_against_0(0);
